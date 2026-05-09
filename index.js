@@ -1,10 +1,16 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// In-memory message storage (Simple for now)
+let messages = [
+    { sender: "Ayuuu", text: "Hey love! Welcome to our new web chat! ❤️", time: new Date() }
+];
 
 const bibleQuotes = [
     "Love is patient, love is kind. It does not envy, it does not boast, it is not proud. - 1 Corinthians 13:4",
@@ -29,13 +35,32 @@ const bibleQuotes = [
     "Do everything in love. - 1 Corinthians 16:14"
 ];
 
+// Serve the chat web page
 app.get('/', (req, res) => {
-    res.send('CatWorld Server is Running! ❤️');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// API to get random quote
 app.get('/quote', (req, res) => {
     const randomQuote = bibleQuotes[Math.floor(Math.random() * bibleQuotes.length)];
     res.json({ quote: randomQuote });
+});
+
+// API for chat messages
+app.get('/api/messages', (req, res) => {
+    res.json(messages);
+});
+
+app.post('/api/messages', (req, res) => {
+    const { sender, text } = req.body;
+    if (sender && text) {
+        messages.push({ sender, text, time: new Date() });
+        // Keep only last 50 messages to save memory
+        if (messages.length > 50) messages.shift();
+        res.status(201).json({ success: true });
+    } else {
+        res.status(400).json({ error: "Missing sender or text" });
+    }
 });
 
 app.listen(PORT, () => {
